@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CODE SPHERE</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #f5f5f5;
+    }
+    .login-box {
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
+      width: 300px;
+      text-align: center;
+    }
+    button, input {
+      margin: 10px 0;
+      padding: 10px;
+      width: 100%;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .google-btn {
+      background: #4285F4;
+      color: white;
+      border: none;
+    }
+    .login-btn {
+      background: #34A853;
+      color: white;
+      border: none;
+    }
+    .register-btn {
+      background: #dc2222;
+      color: white;
+      border: none;
+    }
+    .error-box {
+  background: #ffe5e5;
+  color: #d8000c;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
+  font-size: 14px;
+  border: 1px solid #d8000c;
+  display: none;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+  </style>
+</head>
+<body>
+<div class="login-box">
+  <h2>Login to CODE SPHERE</h2>
+
+  <!-- Google Login -->
+  <button class="google-btn" id="googleLogin">Login with Google</button>
+  <hr>
+
+  <!-- Email + Password -->
+<input type="email" id="email" placeholder="Email"><br><br>
+<input type="password" id="password" placeholder="Password"><br><br>
+
+<button class="login-btn" id="emailLogin">Login</button>
+<button class="register-btn" id="emailRegister">Register</button>
+  
+<div id="error-box" class="error-box" style="display:none;"></div>
+
+</div>
+
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, 
+         signInWithEmailAndPassword, createUserWithEmailAndPassword } 
+  from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+function showError(message) {
+  const box = document.getElementById("error-box");
+  box.innerText = message;
+  box.style.display = "block";
+}
+
+// Fetch Firebase config from backend
+const config = await fetch("/firebase-config").then(res => res.json());
+const app = initializeApp(config);
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
+
+
+// --- Google Login ---
+document.getElementById("googleLogin").addEventListener("click", async (event) => {
+  event.preventDefault();
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    // Get ID token from Firebase
+    const idToken = await auth.currentUser.getIdToken(true);
+    await sendIdTokenToBackend(idToken);
+  } catch (error) {
+    showError("Google login failed: " + error.message);
+  }
+});
+
+// --- Email Login ---
+document.getElementById("emailLogin").addEventListener("click", async (event) => {
+  event.preventDefault();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (!email || !password) return showError("Plese Provide both Email and Password");
+
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    // Get ID token from Firebase
+    const idToken = await auth.currentUser.getIdToken(true);
+    await sendIdTokenToBackend(idToken);
+  } catch (error) {
+    showError("Email login failed: " + error.message);
+  }
+});
+
+// --- Email Registration ---
+// --- Email Registration ---
+document.getElementById("emailRegister").addEventListener("click", async (event) => {
+  event.preventDefault();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (!email || !password) return alert("Please fill in email & password");
+
+  try {
+    await createUserWithEmailAndPassword(auth, email, password);
+    // Get ID token from Firebase
+    const idToken = await auth.currentUser.getIdToken(true);
+    // ✅ Don't pass name and phone - let backend handle it
+    await sendIdTokenToBackend(idToken);
+  } catch (error) {
+    showError("Registration failed: " + error.message);
+  }
+});
+
+// --- Send ID Token to Backend ---
+// --- Send ID Token to Backend ---
+async function sendIdTokenToBackend(idToken, name = null, phone = null) {
+  const res = await fetch("/firebase-login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken, name, phone }),
+    credentials: "same-origin"
+  });
+
+  const data = await res.json();
+  if (res.ok) {
+    if (data.need_profile) {
+      window.location.href = "/complete-profile";  // ✅ This will redirect to your page
+    } else {
+      window.location.href = "/home";
+    }
+  } else {
+    showError("Backend Error: " + error.message);
+  }
+}
+</script>
+
+</body>
+</html>

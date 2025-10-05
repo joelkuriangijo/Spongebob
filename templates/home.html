@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CodeSphere | Virtual Coding Classroom</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .main { text-align: center; }
+    input[type="text"] { padding: 10px; margin: 10px; width: 300px; }
+    button { padding: 10px 20px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <h2>CodeSphere</h2>
+    <a href="{{ url_for('logout') }}">Logout</a>
+  </nav>
+  <section class="main">
+    <h1>Welcome {{ user.name or user.email.split('@')[0] }}</h1>
+    <button onclick="window.location.href='/meeting/create'">Create New Meeting</button>
+    <hr style="margin: 20px auto; width: 50%;">
+    <div>
+      <input type="text" id="meetingIdInput" placeholder="Enter Meeting ID to Join">
+      <button onclick="joinMeeting()">Join Meeting</button>
+    </div>
+  </section>
+
+  <script>
+    function joinMeeting() {
+      const meetingId = document.getElementById('meetingIdInput').value.trim();
+      if (meetingId) {
+        window.location.href = '/meeting/' + meetingId;
+      } else {
+        alert('Please enter a valid Meeting ID.');
+      }
+    }
+  </script>
+</body>
+</html>
